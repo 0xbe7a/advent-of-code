@@ -1,0 +1,6 @@
+resolver: lts-16.20
+packages:
+- .
+nix:
+  enable: true
+  packages: [glpk, pcre]

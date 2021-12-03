@@ -1,0 +1,8 @@
+.stack-work/
+hs.cabal
+*~
+Y2019
+Y2020
+
+# Input files
+/tmp/
