@@ -11,6 +11,7 @@ import qualified Aoc.Y2021.D05 as D05
 import qualified Aoc.Y2021.D06 as D06
 import qualified Aoc.Y2021.D07 as D07
 import qualified Aoc.Y2021.D08 as D08
+import qualified Aoc.Y2021.D09 as D09
 
 
 year :: Year
@@ -22,5 +23,6 @@ year = Year 2021
     ( 5, D05.day),
     ( 6, D06.day),
     ( 7, D07.day),
-    ( 8, D08.day)
+    ( 8, D08.day),
+    ( 9, D09.day)
   ]
