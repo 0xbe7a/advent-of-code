@@ -9,6 +9,7 @@ dependencies:
 - parser-combinators
 - text
 - transformers
+- psqueues
 
 library:
   source-dirs: src
