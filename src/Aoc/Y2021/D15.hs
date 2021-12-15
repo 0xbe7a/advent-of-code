@@ -11,7 +11,7 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Arrow (Arrow (first, second))
 import Control.Monad
 import Data.Foldable (foldl')
-import Data.HashPSQ (HashPSQ, alter, fromList, lookup, minView, size)
+import Data.HashPSQ (HashPSQ, alter, fromList, lookup, minView, size, unsafeInsertIncreasePriority, empty)
 import Data.Maybe (fromJust, fromMaybe, isNothing, mapMaybe)
 import qualified Debug.Trace as Debug
 import GHC.Arr (Ix (inRange, range))
@@ -33,13 +33,13 @@ neighbors (y, x) = [(y + dy, x + dx) | (dx, dy) <- [(-1, 0), (1, 0), (0, -1), (0
 dijkstra :: Cave -> Point -> Point -> Integer
 dijkstra cave start = dijkstra' frontier
   where
+    -- This results in more unique prioritys
     totalWeight = sum $ map snd cave
-    frontier = Data.HashPSQ.fromList $ map toFrontier cave
+    frontier = foldl' (\q (c, v, r) -> unsafeInsertIncreasePriority c v r q) Data.HashPSQ.empty $ zipWith toFrontier [totalWeight..] cave
 
-    toFrontier :: (Point, Integer) -> (Point, Integer, Integer)
-    toFrontier (c, r)
+    toFrontier i (c, r)
       | c == start = (c, 0, 0)
-      | otherwise = (c, totalWeight, r)
+      | otherwise = (c, i, r)
 
 dijkstra' :: HashPSQ Point Integer Integer -> Point -> Integer
 dijkstra' frontier end = result
