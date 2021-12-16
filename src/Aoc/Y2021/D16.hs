@@ -6,12 +6,9 @@ import           Control.Monad
 
 import           Aoc.Day
 import           Aoc.Parse
-import Numeric (readInt, showIntAtBase)
-import Data.Char (digitToInt, intToDigit)
+import Data.Char (digitToInt)
 import Data.Foldable (foldl')
 import Data.Text (Text, pack)
-import Data.Text.Internal.Read (hexDigitToInt)
-import qualified Debug.Trace as Debug
 import Control.Applicative (Applicative(liftA2))
 
 data Header = Header {version :: Int, typeId :: Int} deriving Show
@@ -36,52 +33,52 @@ hexDigitToBin 'E' = "1110"
 hexDigitToBin 'F' = "1111"
 hexDigitToBin _ = error "Invalid Char"
 
+parseBinDigit :: Int -> Int -> Parser Int
+parseBinDigit n p = bin2Num p <$> count n binDigitChar
+    where bin2Num p = foldl' (\sum i -> sum * 2 + digitToInt i) p
+    
+parseValuePayload :: Parser Payload
+parseValuePayload = Value <$> parseValuePayload' 0
+    where parseValuePayload' p = do
+            lastGroup <- (True <$ char '0') <|> (False <$ char '1')
+            group <- parseBinDigit 4 p
+            if lastGroup then
+                return group
+            else
+                parseValuePayload' group
+
+parseOperatorPayload :: Parser Payload
+parseOperatorPayload = do
+    lengthFlag <- (True <$ char '0') <|> (False <$ char '1')
+    if lengthFlag then do
+        lengthInBits <- parseBinDigit 15 0
+        parserBits <- count lengthInBits anySingle
+        oldInput <- getInput
+        oldOffset <- getOffset
+        setInput $ pack parserBits
+        subPackages <- many parsePacket
+        setInput oldInput
+        setOffset oldOffset
+        return $ Operator subPackages
+    else do
+        subCount <- parseBinDigit 11 0
+        Operator <$> count subCount parsePacket
+
+parsePacket :: Parser Packet
+parsePacket = do
+    header <- parseHeader
+    payload <- case typeId header of
+        4 -> parseValuePayload
+        _ -> parseOperatorPayload
+
+    return (Packet header payload)
+    where parseHeader = Header <$> parseBinDigit 3 0 <*> parseBinDigit 3 0
+
 parser :: Parser Packet
 parser = do
     inputAsBin <- concatMap hexDigitToBin <$> many hexDigitChar
     setInput (pack inputAsBin)
     parsePacket <* many (char '0')
-    where
-        parsePacket = do
-            header <- parseHeader
-            payload <- case typeId header of
-                4 -> Value <$> parseChunkedNum 0
-                _ -> Operator <$> parseOperator
-
-            return (Packet header payload)
-
-        binDigit :: Int -> Int -> Parser Int
-        binDigit n p = bin2Num p <$> count n binDigitChar
-        bin2Num p = foldl' (\sum i -> sum * 2 + digitToInt i) p
-        parseHeader = Header <$> binDigit 3 0 <*> binDigit 3 0
-
-        parseChunkedNum p = do
-            lastGroup <- (True <$ char '0') <|> (False <$ char '1')
-            group <- binDigit 4 p
-            if lastGroup then
-                return group
-            else
-                parseChunkedNum group
-
-        parseOperator = do
-            lengthFlag <- (True <$ char '0') <|> (False <$ char '1')
-            if lengthFlag then do
-                lengthInBits <- binDigit 15 0
-                parserBits <- count lengthInBits anySingle
-
-                oldInput <- getInput
-                oldOffset <- getOffset
-                setInput $ pack parserBits
-
-                subPackages <- many parsePacket
-
-                setInput oldInput
-                setOffset oldOffset
-                return subPackages
-            else do
-                subCount <- binDigit 11 0
-                count subCount parsePacket
-
 
 versionSum :: Packet -> Int
 versionSum (Packet header (Value _)) = version header
@@ -89,18 +86,21 @@ versionSum (Packet header (Operator pkts)) = version header + sum (map versionSu
 
 evalPacket :: Packet -> Int
 evalPacket (Packet header (Value x)) = x
-evalPacket (Packet header (Operator pkts)) = case typeId header of
-    0 -> all sum pkts
-    1 -> all product pkts
-    2 -> all minimum pkts
-    3 -> all maximum pkts
-    5 -> binary (>) pkts
-    6 -> binary (<) pkts
-    7 -> binary (==) pkts
-    _ -> error ("Invalid Operation" ++ show header)
+evalPacket (Packet header (Operator pkts)) = op pkts
     where 
+        op = case typeId header of
+            0 -> all sum
+            1 -> all product
+            2 -> all minimum
+            3 -> all maximum
+            5 -> binary (>)
+            6 -> binary (<)
+            7 -> binary (==)
+            _ -> error ("Invalid Operation" ++ show header)
+
         all op = op . map evalPacket
-        binary op pkts = if liftA2 op (evalPacket . head) (evalPacket . head . tail) pkts then 1 else 0
+        binary op [a, b] = if evalPacket a `op` evalPacket b then 1 else 0
+        binary op _ = error "Invalid Subpacket count"
 
 
 solver :: Packet -> IO ()
