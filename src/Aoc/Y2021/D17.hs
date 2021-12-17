@@ -21,7 +21,7 @@ data TargetArea = Area {x :: Bounds, y :: Bounds} deriving (Show)
 
 data SimState a = State {i :: Integer, p :: Integer, d :: Integer, validSteps :: [Integer], v :: a} deriving (Show)
 
-data SimResult a = Invalid | Valid {infinite :: Bool, steps :: [Integer], finalValue :: a} deriving (Show, Eq)
+data SimResult a = Invalid | Valid {steps :: [Integer], finalValue :: a} deriving (Show, Eq)
 
 parser :: Parser TargetArea
 parser = Area <$> (string "target area: " *> parseRangeCoord 'x' <* string ", ") <*> parseRangeCoord 'y'
@@ -42,9 +42,9 @@ simulateAxis velocity value final range = do
 
   finalState <- gets (final range)
   case (finalState, isInRange, null validSteps') of
-    (True, True, _) -> return $ Valid True (reverse validSteps') v'
+    (True, True, _) -> return $ Valid (reverse validSteps' ++ [i'..]) v'
     (True, False, True) -> return Invalid
-    (True, False, False) -> return $ Valid False (reverse validSteps') v'
+    (True, False, False) -> return $ Valid (reverse validSteps') v'
     _ -> simulateAxis velocity value final range
 
 simulateX :: (Integer, Integer) -> Integer -> SimResult ()
@@ -65,10 +65,9 @@ sortedIntersection left@(l : ls) right@(r : rs)
   | otherwise = sortedIntersection (dropWhile (< l) right) left
 
 combineSimResults :: SimResult a -> SimResult b -> Maybe b
-combineSimResults (Valid infa stepsa _) (Valid infb stepsb valb)
+combineSimResults (Valid stepsa _) (Valid stepsb valb)
   | not $ null $ sortedIntersection stepsa stepsb = Just valb
-  | infa && not (null $ sortedIntersection [(last stepsa) ..] stepsb) = Just valb
-  | infb && not (null $ sortedIntersection stepsa [(last stepsb) ..]) = Just valb
+  | otherwise = Nothing
 combineSimResults _ _ = Nothing
 
 partialSimulations :: TargetArea -> [(SimResult (), SimResult Integer)]
