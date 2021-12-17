@@ -99,4 +99,4 @@ benchMain area =
     ]
 
 day :: Day
-day = dayParse parser benchMain
+day = dayParse parser solver
