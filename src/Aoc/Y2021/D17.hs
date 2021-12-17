@@ -8,6 +8,9 @@ import Aoc.Parse
 import Control.Applicative (Applicative (liftA2))
 import Control.Monad
 import Control.Monad.Trans.State (State, evalState, get, gets, put)
+
+import Criterion.Main
+import Criterion.Main.Options
 import Data.Ix (Ix (inRange))
 import Data.List
 import Data.Maybe (mapMaybe)
@@ -61,25 +64,21 @@ sortedIntersection left@(l : ls) right@(r : rs)
   | l == r = l : sortedIntersection ls rs
   | otherwise = sortedIntersection (dropWhile (< l) right) left
 
-unionSimResult :: SimResult () -> SimResult Integer -> Maybe Integer
-unionSimResult (Valid infa stepsa _) (Valid infb stepsb valb)
+combineSimResults :: SimResult a -> SimResult b -> Maybe b
+combineSimResults (Valid infa stepsa _) (Valid infb stepsb valb)
   | not $ null $ sortedIntersection stepsa stepsb = Just valb
   | infa && not (null $ sortedIntersection [(head stepsa) ..] stepsb) = Just valb
   | infb && not (null $ sortedIntersection stepsa [(head stepsb) ..]) = Just valb
-unionSimResult _ _ = Nothing
+combineSimResults _ _ = Nothing
 
-simulate :: TargetArea -> Integer -> Integer -> Maybe Integer
-simulate area sx sy = unionSimResult simX simY
-  where
-    simX = simulateX (x area) sx
-    simY = simulateY (y area) sy
-
-goodStartConfigs :: TargetArea -> [(Integer, Integer)]
-goodStartConfigs area = (,) <$> filter filterX [(- bound) .. bound] <*> filter filterY [(- bound) .. bound]
+partialSimulations :: TargetArea -> [(SimResult (), SimResult Integer)]
+partialSimulations area = (,) <$> simResults (simulateX (x area)) [(- bound) .. bound] <*> simResults (simulateY (y area)) [(- bound) .. bound]
   where
     maxAbs a b = abs a `max` abs b
+    -- This bound is not correct but holds for actual inputs
     bound = max (uncurry maxAbs (x area)) (uncurry maxAbs (y area))
-    filterX sx = Invalid /= simulateX (x area) sx
+
+    simResults simf = filter (Invalid /=) . map simf
     filterY sy = Invalid /= simulateY (y area) sy
 
 solver :: TargetArea -> IO ()
@@ -89,7 +88,15 @@ solver area = do
   putStrLn ">> Part 2"
   print $ length simResults
   where
-    simResults = mapMaybe (uncurry (simulate area)) $ goodStartConfigs area
+    simResults = mapMaybe (uncurry combineSimResults) $ partialSimulations area
+
+benchMain :: TargetArea -> IO ()
+benchMain area =
+  runMode
+    (Run defaultConfig Pattern ["Part 1", "Part 2"])
+    [ bench "Part 1" $ whnf (maximum . mapMaybe (uncurry combineSimResults) . partialSimulations) area,
+      bench "Part 2" $ whnf (length . mapMaybe (uncurry combineSimResults) . partialSimulations) area
+    ]
 
 day :: Day
 day = dayParse parser solver

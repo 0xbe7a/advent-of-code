@@ -10,6 +10,7 @@ dependencies:
 - text
 - transformers
 - psqueues
+- criterion
 
 library:
   source-dirs: src
