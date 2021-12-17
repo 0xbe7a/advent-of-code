@@ -19,6 +19,7 @@ import qualified Aoc.Y2021.D13 as D13
 import qualified Aoc.Y2021.D14 as D14
 import qualified Aoc.Y2021.D15 as D15
 import qualified Aoc.Y2021.D16 as D16
+import qualified Aoc.Y2021.D17 as D17
 
 
 year :: Year
@@ -38,5 +39,6 @@ year = Year 2021
     ( 13, D13.day),
     ( 14, D14.day),
     ( 15, D15.day),
-    ( 16, D16.day)
+    ( 16, D16.day),
+    ( 17, D17.day)
   ]
