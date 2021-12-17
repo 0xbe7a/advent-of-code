@@ -67,12 +67,12 @@ sortedIntersection left@(l : ls) right@(r : rs)
 combineSimResults :: SimResult a -> SimResult b -> Maybe b
 combineSimResults (Valid infa stepsa _) (Valid infb stepsb valb)
   | not $ null $ sortedIntersection stepsa stepsb = Just valb
-  | infa && not (null $ sortedIntersection [(head stepsa) ..] stepsb) = Just valb
-  | infb && not (null $ sortedIntersection stepsa [(head stepsb) ..]) = Just valb
+  | infa && not (null $ sortedIntersection [(last stepsa) ..] stepsb) = Just valb
+  | infb && not (null $ sortedIntersection stepsa [(last stepsb) ..]) = Just valb
 combineSimResults _ _ = Nothing
 
 partialSimulations :: TargetArea -> [(SimResult (), SimResult Integer)]
-partialSimulations area = (,) <$> simResults (simulateX (x area)) [(- bound) .. bound] <*> simResults (simulateY (y area)) [(- bound) .. bound]
+partialSimulations area = (,) <$> simResults (simulateX (x area)) [0..bound] <*> simResults (simulateY (y area)) [(- bound) .. bound]
   where
     maxAbs a b = abs a `max` abs b
     -- This bound is not correct but holds for actual inputs
@@ -99,4 +99,4 @@ benchMain area =
     ]
 
 day :: Day
-day = dayParse parser solver
+day = dayParse parser benchMain
