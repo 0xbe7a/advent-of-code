@@ -6,9 +6,6 @@ where
 import Aoc.Day
 import Aoc.Parse
 import Control.Monad
-import Data.Char (digitToInt)
-import Data.Complex (magnitude)
-import Data.Either (isLeft)
 
 data Expr a = Literal a | Pair (Expr a) (Expr a) deriving (Show, Eq)
 
