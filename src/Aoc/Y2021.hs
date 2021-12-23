@@ -24,6 +24,7 @@ import qualified Aoc.Y2021.D18 as D18
 import qualified Aoc.Y2021.D19 as D19
 import qualified Aoc.Y2021.D20 as D20
 import qualified Aoc.Y2021.D22 as D22
+import qualified Aoc.Y2021.D23 as D23
 
 
 year :: Year
@@ -48,5 +49,6 @@ year = Year 2021
     ( 18, D18.day),
     ( 19, D19.day),
     ( 20, D20.day),
-    ( 22, D22.day)
+    ( 22, D22.day),
+    ( 23, D23.day)
   ]

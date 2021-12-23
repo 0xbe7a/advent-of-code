@@ -10,6 +10,7 @@ dependencies:
 - text
 - transformers
 - psqueues
+- hashable
 - criterion
 
 library:
